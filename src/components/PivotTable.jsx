@@ -211,17 +211,44 @@ export default function PivotTable({
                   ))
                 )}
                 {values.length > 0 &&
-                  values.map((val, valIdx) => (
-                    <td
-                      key={`rowtotal_${rowIdx}_${valIdx}`}
-                      className="border p-2 font-bold text-gray-700"
-                    >
-                      {pivotMatrix[rowIdx].reduce(
-                        (acc, cell) => acc + Number(cell[val] || 0),
-                        0
-                      )}
-                    </td>
-                  ))}
+                  values.map((val, valIdx) => {
+                    const aggType = aggregations[val] || "sum";
+                    const cells = pivotMatrix[rowIdx]
+                      .map((cell) => cell[val])
+                      .filter((v) => v !== null && v !== undefined && v !== "");
+
+                    let rowTotalValue = 0;
+
+                    if (aggType === "sum") {
+                      rowTotalValue = cells.reduce((a, b) => a + Number(b), 0);
+                    } else if (aggType === "avg") {
+                      rowTotalValue = cells.length
+                        ? cells.reduce((a, b) => a + Number(b), 0) /
+                          cells.length
+                        : 0;
+                    } else if (aggType === "count") {
+                      rowTotalValue = cells.length;
+                    } else if (aggType === "min") {
+                      rowTotalValue = cells.length
+                        ? Math.min(...cells.map(Number))
+                        : 0;
+                    } else if (aggType === "max") {
+                      rowTotalValue = cells.length
+                        ? Math.max(...cells.map(Number))
+                        : 0;
+                    } else {
+                      rowTotalValue = cells.reduce((a, b) => a + Number(b), 0);
+                    }
+
+                    return (
+                      <td
+                        key={`rowtotal_${rowIdx}_${valIdx}`}
+                        className="border p-2 font-bold text-gray-700"
+                      >
+                        {Number(rowTotalValue).toFixed(2)}
+                      </td>
+                    );
+                  })}
               </tr>
             );
           })}

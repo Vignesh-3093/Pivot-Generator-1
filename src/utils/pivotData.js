@@ -157,14 +157,68 @@ export function generatePivotData({
       return result;
     });
   });
-
   const rowTotals = pivotMatrix.map((row) => {
-    const total = row.reduce((acc, cell) => {
-      return (
-        acc + values.reduce((subAcc, val) => subAcc + Number(cell[val] || 0), 0)
-      );
-    }, 0);
-    return Number.isInteger(total) ? total : Number(total.toFixed(2));
+    const totals = {};
+    values.forEach((val) => {
+      const aggregationType = aggregations[val] || "sum";
+      switch (aggregationType) {
+        case "sum": {
+          const sum = row.reduce(
+            (acc, cell) => acc + (Number(cell[val]) || 0),
+            0
+          );
+          totals[val] = !Number.isInteger(sum) ? Number(sum.toFixed(2)) : sum;
+          break;
+        }
+
+        case "avg":
+          let sum = 0;
+          let count = 0;
+          console.log("Calculating avg for val =", val);
+          row.forEach((cell) => {
+            const valAtCell = cell[val];
+            console.log("valAtCell =", valAtCell);
+            if (
+              valAtCell !== null &&
+              valAtCell !== undefined &&
+              valAtCell !== "" &&
+              valAtCell !== 0
+            ) {
+              sum += Number(valAtCell);
+              count++;
+            }
+          });
+          const average = count ? Number((sum / count).toFixed(2)) : 0;
+          console.log("average =", average);
+          totals[val] = average;
+          break;
+
+        case "count": {
+          const count = row.reduce((acc, cell) => acc + (cell[val] ? 1 : 0), 0);
+          totals[val] = count;
+          break;
+        }
+
+        case "min": {
+          const validNums = row
+            .map((cell) => cell[val])
+            .filter((x) => x !== null && x !== undefined && x !== "" && x !== 0)
+            .map(Number);
+          totals[val] = validNums.length ? Math.min(...validNums) : 0;
+          break;
+        }
+
+        case "max": {
+          const nums = row.map((cell) => Number(cell[val] || 0));
+          totals[val] = nums.length ? Math.max(...nums) : 0;
+          break;
+        }
+
+        default:
+          totals[val] = 0;
+      }
+    });
+    return totals;
   });
 
   let columnTotals = pivotColumns.map((_, colIdx) => {
@@ -181,12 +235,24 @@ export function generatePivotData({
             : totals[val];
           break;
         case "avg":
-          console.log("nums", nums);
-          // console.log("length",length);
-          totals[val] = nums.length
-            ? (nums.reduce((a, b) => a + b, 0) / length).toFixed(2)
-            : 0;
+          let sum = 0;
+          let count = 0;
+          pivotMatrix.forEach((row, rowIdx) => {
+            const valAtCell = row[colIdx][val];
+            if (
+              valAtCell !== 0 &&
+              valAtCell !== null &&
+              valAtCell !== undefined
+            ) {
+              const pivotKey = pivotRows[rowIdx] + "||" + pivotColumns[colIdx];
+              const cellNums = pivotMap.get(pivotKey)?.[val] || [];
+              sum += valAtCell * cellNums.length;
+              count += cellNums.length;
+            }
+          });
+          totals[val] = count ? Number((sum / count).toFixed(2)) : 0;
           break;
+
         case "count":
           totals[val] = nums.reduce((a, b) => a + b, 0);
           break;

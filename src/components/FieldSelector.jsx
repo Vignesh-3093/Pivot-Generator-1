@@ -25,7 +25,7 @@ const FieldItem = ({
   return (
     <div
       ref={drag}
-      className={`p-2 text-[12px] bg-[#f81cafb5] border bg-[#f81cafb5] border rounded-lg shadow-md cursor-grab flex items-center justify-between mb-2 ${
+      className={`p-2 text-[12px] bg-[#f81cafb5] border bg-[#f81cafb5]  rounded-lg shadow-md cursor-grab flex items-center justify-between mb-2 ${
         isDragging ? "opacity-60" : ""
       }`}
     >
