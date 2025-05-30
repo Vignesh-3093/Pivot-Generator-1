@@ -20,7 +20,8 @@ export function generatePivotData({
 
   function parseDMY(dateStr) {
     if (!dateStr) return null;
-    const parts = dateStr.split(/[-\/]/);
+    const parts = dateStr.split(/[-/]/);
+
     if (parts.length !== 3) return null;
     const [day, month, year] = parts.map(Number);
     if (!day || !month || !year) return null;
@@ -157,76 +158,71 @@ export function generatePivotData({
       return result;
     });
   });
-  const rowTotals = pivotMatrix.map((row) => {
-    const totals = {};
-    values.forEach((val) => {
-      const aggregationType = aggregations[val] || "sum";
-      switch (aggregationType) {
-        case "sum": {
-          const sum = row.reduce(
-            (acc, cell) => acc + (Number(cell[val]) || 0),
-            0
-          );
-          totals[val] = !Number.isInteger(sum) ? Number(sum.toFixed(2)) : sum;
-          break;
-        }
+const rowTotals = pivotRows.map((rowKey, rowIdx) => {
+  const totals = {};
+  values.forEach((val) => {
+    const aggregationType = aggregations[val] || "sum";
 
-        case "avg":
-          let sum = 0;
-          let count = 0;
-          console.log("Calculating avg for val =", val);
-          row.forEach((cell) => {
-            const valAtCell = cell[val];
-            console.log("valAtCell =", valAtCell);
-            if (
-              valAtCell !== null &&
-              valAtCell !== undefined &&
-              valAtCell !== "" &&
-              valAtCell !== 0
-            ) {
-              sum += Number(valAtCell);
-              count++;
-            }
-          });
-          const average = count ? Number((sum / count).toFixed(2)) : 0;
-          console.log("average =", average);
-          totals[val] = average;
-          break;
+    // Gather all values in the current row for this val
+    const rowData = pivotMatrix[rowIdx];
+    console.log(`Row ${rowIdx} Data for value '${val}':`, rowData); // Add this line
 
-        case "count": {
-          const count = row.reduce((acc, cell) => acc + (cell[val] ? 1 : 0), 0);
-          totals[val] = count;
-          break;
-        }
+    const nums = rowData.map(cell => Number(cell[val] || 0));
 
-        case "min": {
-          const validNums = row
-            .map((cell) => cell[val])
-            .filter((x) => x !== null && x !== undefined && x !== "" && x !== 0)
-            .map(Number);
-          totals[val] = validNums.length ? Math.min(...validNums) : 0;
-          break;
-        }
+    switch (aggregationType) {
+      case "sum":
+        totals[val] = nums.reduce((a, b) => a + b, 0);
+        totals[val] = !Number.isInteger(totals[val]) ? Number(totals[val].toFixed(2)) : totals[val];
+        break;
 
-        case "max": {
-          const nums = row.map((cell) => Number(cell[val] || 0));
-          totals[val] = nums.length ? Math.max(...nums) : 0;
-          break;
-        }
-
-        default:
-          totals[val] = 0;
+      case "avg": {
+        let sum = 0;
+        let countNonZero = 0;
+        rowData.forEach(cell => {
+          const valueInCell = cell[val];
+          if (typeof valueInCell === 'number' && valueInCell !== 0) {
+            sum += valueInCell;
+            countNonZero++;
+          }
+        });
+        totals[val] = countNonZero > 0 ? Number((sum / countNonZero).toFixed(2)) : 0;
+        break;
       }
-    });
-    return totals;
+
+      case "count": {
+        const nonZeroCount = rowData.filter(cell => {
+          const valueInCell = cell[val];
+          return typeof valueInCell === 'number' && valueInCell !== 0;
+        }).length;
+        totals[val] = nonZeroCount;
+        break;
+      }
+
+      case "min": {
+        const validNums = rowData
+          .map(cell => cell[val])
+          .filter(x => typeof x === 'number' && !isNaN(x) && x !== 0);
+        totals[val] = validNums.length > 0 ? Math.min(...validNums) : 0;
+        break;
+      }
+
+      case "max": {
+        totals[val] = nums.length ? Math.max(...nums) : 0;
+        break;
+      }
+
+      default:
+        totals[val] = 0;
+    }
   });
+  return totals;
+});
 
   let columnTotals = pivotColumns.map((_, colIdx) => {
     const totals = {};
     values.forEach((val) => {
       const aggregationType = aggregations[val] || "sum";
       const nums = pivotMatrix.map((row) => Number(row[colIdx][val] || 0));
-      const length = nums.filter((num) => num != 0).length;
       switch (aggregationType) {
         case "sum":
           totals[val] = nums.reduce((a, b) => a + b, 0);
@@ -234,7 +230,7 @@ export function generatePivotData({
             ? Number(totals[val].toFixed(2))
             : totals[val];
           break;
-        case "avg":
+        case "avg":{
           let sum = 0;
           let count = 0;
           pivotMatrix.forEach((row, rowIdx) => {
@@ -252,21 +248,27 @@ export function generatePivotData({
           });
           totals[val] = count ? Number((sum / count).toFixed(2)) : 0;
           break;
+        }
 
-        case "count":
-          totals[val] = nums.reduce((a, b) => a + b, 0);
-          break;
-        case "min":
+         case "count": {
+        // Count non-zero numeric values only
+        const count = nums.filter((x) => typeof x === "number" && x !== 0).length;
+        totals[val] = count;
+        break;
+      }
+        case "min":{
           const validNums = pivotMatrix
             .map((row) => row[colIdx][val])
             .filter((x) => x !== null && x !== undefined && x !== "" && x !== 0)
             .map(Number);
           totals[val] = validNums.length ? Math.min(...validNums) : 0;
           break;
+        }
 
-        case "max":
+        case "max":{
           totals[val] = nums.length ? Math.max(...nums) : 0;
           break;
+        }
         default:
           totals[val] = 0;
       }

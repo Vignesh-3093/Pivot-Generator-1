@@ -114,7 +114,7 @@ export default function PivotTable({
     );
   }
 
-  const { pivotRows, pivotColumns, pivotMatrix, rowTotals, columnTotals } =
+  const { pivotRows, pivotColumns, pivotMatrix, columnTotals } =
     generatePivotData({
       data,
       rows,
@@ -222,16 +222,24 @@ export default function PivotTable({
                     if (aggType === "sum") {
                       rowTotalValue = cells.reduce((a, b) => a + Number(b), 0);
                     } else if (aggType === "avg") {
-                      rowTotalValue = cells.length
-                        ? cells.reduce((a, b) => a + Number(b), 0) /
-                          cells.length
+                      const nonZeroCells = cells.filter(
+                        (cell) => Number(cell) !== 0
+                      );
+                      rowTotalValue = nonZeroCells.length
+                        ? nonZeroCells.reduce((a, b) => a + Number(b), 0) /
+                          nonZeroCells.length
                         : 0;
                     } else if (aggType === "count") {
-                      rowTotalValue = cells.length;
+                      const nonZeroCells = cells.filter(
+                        (cell) => Number(cell) !== 0
+                      );
+                      rowTotalValue = nonZeroCells.length;
                     } else if (aggType === "min") {
-                      rowTotalValue = cells.length
-                        ? Math.min(...cells.map(Number))
-                        : 0;
+                      const nonZeroCells = cells
+                        .map(Number)
+                        .filter((cell) => cell !== 0 && !isNaN(cell));
+                      rowTotalValue =
+                        nonZeroCells.length > 0 ? Math.min(...nonZeroCells) : 0;
                     } else if (aggType === "max") {
                       rowTotalValue = cells.length
                         ? Math.max(...cells.map(Number))

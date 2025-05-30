@@ -7,7 +7,7 @@ import reset from "../assets/images/reset.png";
 const FieldItem = ({
   field,
   type,
-  onDrop,
+  
   onRemove,
   isDateHierarchy,
   isNumerical,
@@ -25,7 +25,7 @@ const FieldItem = ({
   return (
     <div
       ref={drag}
-      className={`p-2 text-[12px] bg-[#f81cafb5] border bg-[#f81cafb5]  rounded-lg shadow-md cursor-grab flex items-center justify-between mb-2 ${
+      className={`p-2 text-[12px] border bg-[#f81cafb5]  rounded-lg shadow-md cursor-grab flex items-center justify-between mb-2 ${
         isDragging ? "opacity-60" : ""
       }`}
     >
@@ -76,7 +76,7 @@ const DropZone = ({
   onDrop,
   onRemove,
   title,
-  icon,
+
   aggregations,
   setAggregations,
 }) => {
@@ -135,7 +135,7 @@ export default function FieldSelector({
   setAggregations,
   numericalFields,
 }) {
-  const [dateFields, setDateFields] = useState([]);
+  const [, setDateFields] = useState([]);
   const [dateHierarchyFields, setDateHierarchyFields] = useState([]);
 
   useEffect(() => {
