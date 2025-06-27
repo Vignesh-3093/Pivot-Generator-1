@@ -247,7 +247,6 @@ export default function PivotTable({
                     } else {
                       rowTotalValue = cells.reduce((a, b) => a + Number(b), 0);
                     }
-
                     return (
                       <td
                         key={`rowtotal_${rowIdx}_${valIdx}`}
